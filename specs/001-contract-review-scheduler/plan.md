@@ -2,24 +2,35 @@
 
 **功能分支**: `001-contract-review-scheduler`  
 **建立日期**: 2025-11-18  
+**更新日期**: 2025-11-18 (ASP.NET Core 8.0 版本)  
 **狀態**: 規劃中
 
 ## 技術背景
 
 ### 選定技術棧
-- **前端框架**: React + TypeScript
-- **後端框架**: Node.js + Express.js
-- **資料庫**: PostgreSQL
-- **驗證**: Active Directory (WiAD) 整合
-- **郵件服務**: SMTP (公司郵件系統)
-- **前端狀態管理**: Redux Toolkit
-- **UI 框架**: Material-UI (支援繁體中文)
-- **API 風格**: RESTful API
+- **框架**: ASP.NET Core 8.0 Web API
+- **程式語言**: C#
+- **資料庫**: SQL Server 2019+
+- **ORM**: Entity Framework Core (Code First)
+- **認證**: LDAP (System.DirectoryServices) + JWT
+- **郵件**: System.Net.Mail + 後台服務 (IHostedService)
+- **快取**: IMemoryCache (System.Runtime.Caching)
+- **日誌**: Serilog
+- **API 設計**: RESTful (控制器，不使用 Minimal APIs)
+- **物件映射**: POCO (不使用 AutoMapper)
 
-### 依賴項目
-- WiAD 帳號系統 API 文件
-- 公司郵件 SMTP 伺服器設定
-- 公司網路基礎設施
+### 技術選擇理由
+- ASP.NET Core 8.0: 企業級效能、完整的 .NET 生態
+- SQL Server: 企業級可靠性、複雜查詢支援
+- EF Core Code First: 版本控制友善、易於遷移
+- 無 Redis: 此規模使用 IMemoryCache 足夠
+- 無 AutoMapper: POCO 簡單直接
+- 無 Minimal APIs: 傳統控制器更結構化
+
+### 相依性
+- 公司 WiAD/Active Directory 伺服器
+- 公司 SMTP 郵件伺服器
+- SQL Server 資料庫伺服器
 
 ## 憲章檢查 (Constitution Check)
 
@@ -64,32 +75,47 @@
 
 ### 研究任務
 
-#### 1. WiAD 整合
+#### 1. WiAD/LDAP 整合
 **狀態**: ✅ 完成
-- 決策：使用 LDAP 協議整合 AD
-- 工具：ldapjs npm 套件
+- 決策：使用 System.DirectoryServices 整合 AD
+- 方法：LDAP 協議，IMemoryCache 快取
+- TTL：1 小時
 - 詳見 `research.md`
 
 #### 2. 郵件系統整合
 **狀態**: ✅ 完成
-- 決策：使用 Nodemailer + SMTP
-- 工具：Nodemailer, bull (佇列管理)
+- 決策：使用 System.Net.Mail + IHostedService
+- 方法：後台服務佇列管理，資料庫持久化
+- 重試機制：3 次重試
 - 詳見 `research.md`
 
-#### 3. 月曆 UI 元件
+#### 3. 時段衝突檢測演算法
 **狀態**: ✅ 完成
-- 決策：React Big Calendar
-- 自訂時段和預約顯示
+- 決策：SQL Server DATEDIFF 範圍查詢
+- 方法：雙層驗證（資料庫 + 應用層）
+- EF Core 效能最佳化
 - 詳見 `research.md`
 
-#### 4. 時段衝突檢測演算法
+#### 4. 記憶體快取策略
 **狀態**: ✅ 完成
-- 決策：雙層驗證（資料庫 + 應用層）
-- PostgreSQL 範圍查詢
+- 決策：使用 IMemoryCache，無 Redis
+- 策略：AD 快取 (1hr)、審查人員清單 (1hr)、預約資料 (15min)
+- 詳見 `research.md`
+
+#### 5. 認證與授權架構
+**狀態**: ✅ 完成
+- 決策：LDAP 驗證 + JWT token 無狀態認證
+- 方法：RBAC (Role-Based Access Control)
+- 詳見 `research.md`
+
+#### 6. 構控制器架構
+**狀態**: ✅ 完成
+- 決策：傳統控制器模式 (ASP.NET Core Controllers)
+- 理由：結構化、易於測試、避免 Minimal APIs 複雜性
 - 詳見 `research.md`
 
 ### 研究輸出
-✅ `research.md` - 包含 10 個主要技術決策和理由
+✅ `research.md` - 包含 11 個 ASP.NET Core 技術決策和理由
 
 ## Phase 1: 設計與約定
 
@@ -130,39 +156,58 @@
 ### 待分解領域
 
 1. **後端基礎設施**
-   - 專案初始化和依賴設定
-   - 資料庫架構和遷移
-   - WiAD 認證整合
-   - 郵件服務設定
+   - ASP.NET Core 專案初始化和依賴 NuGet 套件
+   - SQL Server 資料庫連線設定
+   - Entity Framework Core DbContext 設置
+   - 初始遷移和資料庫建立
+   - Serilog 結構化日誌設定
+   - 全域例外處理中間件
 
-2. **預約核心功能**
+2. **認證與授權**
+   - System.DirectoryServices LDAP 整合
+   - AD 帳號驗證和同步
+   - JWT token 簽發和驗證
+   - IMemoryCache LDAP 快取層
+   - 角色型存取控制 (RBAC) 實現
+
+3. **預約核心功能**
+   - Appointment 控制器和服務層
    - 預約 CRUD 操作
-   - 時段衝突驗證
+   - 時段衝突驗證（SQL Server 查詢優化）
    - 休假檢查邏輯
-   - 預約狀態轉換
+   - 預約狀態轉換工作流
+   - 業務驗證規則
 
-3. **審查人員功能**
-   - 預約接受/拒絕
-   - 休假管理
-   - 預約轉送代理
-
-4. **前端使用者介面**
-   - 登入頁面
-   - 月曆檢視
-   - 預約表單
-   - 預約確認對話
-   - 審查人員管理面板
+4. **審查人員功能**
+   - 預約接受/拒絕端點
+   - 休假排程管理
+   - 預約轉送和代理接受/拒絕
+   - LeaveSchedule 控制器
 
 5. **郵件通知系統**
-   - 通知範本
-   - 郵件佇列服務
-   - 通知日誌記錄
+   - IHostedService 後台服務實現
+   - 通知範本管理
+   - NotificationLog 記錄
+   - SMTP 郵件發送
+   - 失敗重試機制 (3 次)
 
-6. **測試和品質保證**
-   - 單元測試
-   - 整合測試
-   - 端到端測試
-   - 效能測試
+6. **API 文件和驗證**
+   - Swagger/OpenAPI 整合
+   - 請求和回應驗證
+   - 錯誤處理標準化
+   - API 文件補充
+
+7. **測試和品質保證**
+   - 單元測試（xUnit）
+   - 整合測試（測試資料庫）
+   - 端到端測試（API 測試）
+   - 效能測試和優化
+
+8. **部署和文件**
+   - Docker 容器化 (可選)
+   - CI/CD 管線設定
+   - 部署指南編寫
+   - 營運手冊編寫
 
 ## 門檻檢查
 
