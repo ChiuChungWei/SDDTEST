@@ -185,10 +185,10 @@
 ### US3 實施任務
 
 - [ ] T044 [P] [US3] 創建 LeaveSchedule 模型在 `backend/Models/Domain/LeaveSchedule.cs` (reviewer_id, date, time_start, time_end)
-- [ ] T045 [P] [US3] 實施休假設定 API 端點在 `backend/Controllers/LeaveSchedulesController.cs` (POST /api/leave-schedules)
-- [ ] T046 [P] [US3] 實施休假刪除 API 端點在 `backend/Controllers/LeaveSchedulesController.cs` (DELETE /api/leave-schedules/{id})
+- [x] T045 [P] [US3] 實施休假設定 API 端點在 `backend/Controllers/LeaveSchedulesController.cs` (POST /api/leave-schedules)
+- [x] T046 [P] [US3] 實施休假刪除 API 端點在 `backend/Controllers/LeaveSchedulesController.cs` (DELETE /api/leave-schedules/{id})
 - [ ] T047 [US3] 在衝突偵測中整合休假檢查邏輯 (修改 `backend/Services/ConflictDetectionService.cs`)
-- [ ] T048 [P] [US3] 實施休假清單查詢在 `backend/Controllers/LeaveSchedulesController.cs` (GET /api/leave-schedules?reviewerId=...)
+- [x] T048 [P] [US3] 實施休假清單查詢在 `backend/Controllers/LeaveSchedulesController.cs` (GET /api/leave-schedules?reviewerId=...)
 
 ### US3 前端任務
 
@@ -370,6 +370,7 @@ Phase 8 (文件與部署)
 **文件版本**: 1.0  
 **最後更新**: 2025-11-18  
 **狀態**: 準備開始 Phase 1 實施
+
 
 
 

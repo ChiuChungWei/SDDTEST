@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ContractReviewScheduler")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc55ef624b5cecdc7ed218c0f972915e1ab55be1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3df18717f10c733571ed6ae664654abd036ec5f8")]
 [assembly: System.Reflection.AssemblyProductAttribute("ContractReviewScheduler")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ContractReviewScheduler")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
