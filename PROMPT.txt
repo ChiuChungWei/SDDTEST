@@ -1,1 +1,1 @@
-/speckit.implement
+Continue with the implementation.

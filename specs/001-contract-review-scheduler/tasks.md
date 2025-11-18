@@ -94,11 +94,11 @@
 
 ### 實施任務
 
-- [ ] T008 實施 LDAP 認證服務在 `backend/Services/LdapService.cs` (System.DirectoryServices 整合)
-- [ ] T009 [P] 實施 IMemoryCache 快取層在 `backend/Services/CacheService.cs` (AD 使用者快取 1 小時 TTL)
-- [ ] T010 [P] 實施 JWT Token 簽發與驗證在 `backend/Services/JwtService.cs`
-- [ ] T011 [P] 實施 RBAC 授權中間件在 `backend/Middleware/RoleAuthorizationMiddleware.cs`
-- [ ] T012 實施使用者同步服務在 `backend/Services/UserSyncService.cs`
+- [x] T008 實施 LDAP 認證服務在 `backend/Services/LdapService.cs` (System.DirectoryServices 整合)
+- [x] T009 [P] 實施 IMemoryCache 快取層在 `backend/Services/CacheService.cs` (AD 使用者快取 1 小時 TTL)
+- [x] T010 [P] 實施 JWT Token 簽發與驗證在 `backend/Services/JwtService.cs`
+- [x] T011 [P] 實施 RBAC 授權中間件在 `backend/Middleware/RoleAuthorizationMiddleware.cs`
+- [x] T012 實施使用者同步服務在 `backend/Services/UserSyncService.cs`
 
 **Phase 2 檢查點**: 認證系統已完成，使用者故事實施可並行進行
 
@@ -370,4 +370,5 @@ Phase 8 (文件與部署)
 **文件版本**: 1.0  
 **最後更新**: 2025-11-18  
 **狀態**: 準備開始 Phase 1 實施
+
 

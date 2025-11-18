@@ -1,7 +1,11 @@
 using Serilog;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using ContractReviewScheduler.Data;
 using ContractReviewScheduler.Middleware;
+using ContractReviewScheduler.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +25,39 @@ builder.Host.UseSerilog();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// 新增 Phase 2 服務
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ILdapService, LdapService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IUserSyncService, UserSyncService>();
+
+// 配置 JWT 認證
+var jwtKey = builder.Configuration["Jwt:Key"] ?? 
+    throw new InvalidOperationException("JWT Key 未在配置中設定");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ContractReviewScheduler";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "ContractReviewSchedulerClient";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -38,6 +75,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RoleAuthorizationMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -47,7 +85,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
+// 在 UseAuthorization 前需要 UseAuthentication
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 try

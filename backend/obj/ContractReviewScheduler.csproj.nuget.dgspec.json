@@ -78,6 +78,10 @@
               "target": "Package",
               "version": "[4.7.0, )"
             },
+            "System.DirectoryServices.AccountManagement": {
+              "target": "Package",
+              "version": "[4.7.0, )"
+            },
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
               "version": "[7.5.1, )"
