@@ -1,0 +1,569 @@
+openapi: 3.0.3
+info:
+  title: 契約審查預約系統 API
+  description: 用於預約契約審查時段的 RESTful API
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: 本機開發伺服器
+  - url: https://api.company.com/api/v1
+    description: 生產伺服器
+
+tags:
+  - name: 認證
+    description: 使用者認證相關端點
+  - name: 月曆
+    description: 月曆檢視相關端點
+  - name: 預約
+    description: 預約管理相關端點
+  - name: 休假
+    description: 休假排程相關端點
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - 認證
+      summary: 使用者登入
+      description: 使用 Active Directory 帳號登入系統
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: john.doe
+                password:
+                  type: string
+                  format: password
+                  example: password123
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: 登入成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT 認證令牌
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: 認證失敗
+
+  /auth/logout:
+    post:
+      tags:
+        - 認證
+      summary: 使用者登出
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 登出成功
+        '401':
+          description: 未經授權
+
+  /auth/profile:
+    get:
+      tags:
+        - 認證
+      summary: 取得目前使用者資訊
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功取得使用者資訊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: 未經授權
+
+  /calendar/{year}/{month}:
+    get:
+      tags:
+        - 月曆
+      summary: 取得指定月份的月曆資訊
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 11
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功取得月曆資訊
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                  month:
+                    type: integer
+                  appointments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Appointment'
+                  leaves:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaveSchedule'
+
+  /appointments:
+    post:
+      tags:
+        - 預約
+      summary: 建立新預約
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reviewer_id:
+                  type: string
+                  format: uuid
+                  description: 審查人員 ID
+                date:
+                  type: string
+                  format: date
+                  example: '2025-11-25'
+                time_start:
+                  type: string
+                  format: time
+                  example: '09:00:00'
+                time_end:
+                  type: string
+                  format: time
+                  example: '09:30:00'
+                object_name:
+                  type: string
+                  maxLength: 500
+                  example: '勞動契約第 2 版'
+              required:
+                - reviewer_id
+                - date
+                - time_start
+                - time_end
+                - object_name
+      responses:
+        '201':
+          description: 預約成功建立
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: 無效的請求參數
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 時段已被預約或審查人員休假
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/{id}:
+    get:
+      tags:
+        - 預約
+      summary: 取得預約詳情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功取得預約資訊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: 預約不存在
+
+    patch:
+      tags:
+        - 預約
+      summary: 更新預約
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                time_start:
+                  type: string
+                  format: time
+                time_end:
+                  type: string
+                  format: time
+                object_name:
+                  type: string
+      responses:
+        '200':
+          description: 預約更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: 超出 24 小時變更期限
+        '409':
+          description: 新時段衝突
+
+    delete:
+      tags:
+        - 預約
+      summary: 取消預約
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 取消原因
+      responses:
+        '200':
+          description: 預約取消成功
+        '400':
+          description: 超出 24 小時取消期限
+
+  /appointments/{id}/accept:
+    post:
+      tags:
+        - 預約
+      summary: 審查人員接受預約
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 預約已接受
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: 預約不存在
+
+  /appointments/{id}/reject:
+    post:
+      tags:
+        - 預約
+      summary: 審查人員拒絕預約
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 拒絕原因
+      responses:
+        '200':
+          description: 預約已拒絕
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+  /appointments/{id}/delegate:
+    post:
+      tags:
+        - 預約
+      summary: 轉送預約給代理人
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delegate_reviewer_id:
+                  type: string
+                  format: uuid
+                  description: 代理人 ID
+              required:
+                - delegate_reviewer_id
+      responses:
+        '200':
+          description: 預約轉送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+  /leave-schedules:
+    post:
+      tags:
+        - 休假
+      summary: 建立休假排程
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: '2025-11-25'
+                time_start:
+                  type: string
+                  format: time
+                  example: '09:00:00'
+                time_end:
+                  type: string
+                  format: time
+                  example: '12:00:00'
+                reason:
+                  type: string
+                  example: '公假'
+              required:
+                - date
+                - time_start
+                - time_end
+      responses:
+        '201':
+          description: 休假排程建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveSchedule'
+        '409':
+          description: 該時段已有預約，無法設定休假
+
+  /leave-schedules/{id}:
+    delete:
+      tags:
+        - 休假
+      summary: 刪除休假排程
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 休假排程已刪除
+        '404':
+          description: 休假排程不存在
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ad_account:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+            - applicant
+            - reviewer
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        applicant_id:
+          type: string
+          format: uuid
+        reviewer_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        object_name:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - rejected
+            - delegated
+            - delegate_accepted
+            - delegate_rejected
+            - cancelled
+        delegate_reviewer_id:
+          type: string
+          format: uuid
+          nullable: true
+        delegate_status:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    LeaveSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reviewer_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        reason:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: CONFLICT
+        message:
+          type: string
+          example: 該時段已被預約
+        details:
+          type: object
+          nullable: true
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
