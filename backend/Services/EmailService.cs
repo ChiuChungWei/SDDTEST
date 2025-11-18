@@ -2,6 +2,9 @@ using System;
 using System.Net;
 using System.Net.Mail;
 using Serilog;
+using ContractReviewScheduler.Data;
+using ContractReviewScheduler.Models.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContractReviewScheduler.Services
 {

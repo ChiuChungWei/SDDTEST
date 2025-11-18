@@ -1,1 +1,18 @@
-Continue with the implementation.
+Based on the following specification, build a contract review scheduler application.
+
+The application will have the following features:
+- A calendar view for scheduling contract reviews.
+- The ability to create, update, and delete appointments.
+- User authentication and authorization.
+- Email notifications for upcoming appointments.
+- A background service for syncing user data from an LDAP source.
+- A conflict detection service to prevent double-booking.
+
+The application should be built using the following technologies:
+- Backend: C# with ASP.NET Core
+- Database: SQL Server
+- Frontend: TBD
+
+The application should follow the principles of clean architecture and SOLID design.
+
+Please note to only complete the backend development work first.

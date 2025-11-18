@@ -55,6 +55,7 @@ namespace ContractReviewScheduler.Services
         private readonly ApplicationDbContext _context;
         private readonly IConflictDetectionService _conflictService;
         private readonly ICacheService _cacheService;
+        private readonly IEmailService _emailService;
         private readonly ILogger<AppointmentService> _logger;
 
         // 營業時間: 09:00 - 18:00
@@ -68,11 +69,13 @@ namespace ContractReviewScheduler.Services
             ApplicationDbContext context,
             IConflictDetectionService conflictService,
             ICacheService cacheService,
+            IEmailService emailService,
             ILogger<AppointmentService> logger)
         {
             _context = context;
             _conflictService = conflictService;
             _cacheService = cacheService;
+            _emailService = emailService;
             _logger = logger;
         }
 
@@ -158,6 +161,9 @@ namespace ContractReviewScheduler.Services
                 // 清除快取
                 _cacheService.Remove(CacheKeys.ReviewerListKey);
 
+                // 發送郵件通知（非同步，不阻塞主流程）
+                _ = _emailService.SendAppointmentCreatedNotificationAsync(appointment.Id);
+
                 _logger.LogInformation(
                     "預約已建立: AppointmentId={AppointmentId}, Applicant={Applicant}, Reviewer={Reviewer}, Date={Date}",
                     appointment.Id, applicantId, reviewerId, date);
@@ -224,6 +230,9 @@ namespace ContractReviewScheduler.Services
                 _context.AppointmentHistories.Add(history);
                 await _context.SaveChangesAsync();
 
+                // 發送通知
+                _ = _emailService.SendAppointmentAcceptedNotificationAsync(appointmentId);
+
                 _logger.LogInformation("預約已接受: AppointmentId={AppointmentId}, Reviewer={Reviewer}",
                     appointmentId, reviewerId);
 
@@ -270,6 +279,9 @@ namespace ContractReviewScheduler.Services
 
                 _context.AppointmentHistories.Add(history);
                 await _context.SaveChangesAsync();
+
+                // 發送通知
+                _ = _emailService.SendAppointmentRejectedNotificationAsync(appointmentId, reason);
 
                 _logger.LogInformation("預約已拒絕: AppointmentId={AppointmentId}, Reviewer={Reviewer}, Reason={Reason}",
                     appointmentId, reviewerId, reason);
@@ -337,8 +349,8 @@ namespace ContractReviewScheduler.Services
         public async Task<(bool IsAvailable, string? Reason)> ValidateAvailabilityAsync(
             int reviewerId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? excludeAppointmentId = null)
         {
-            // 使用衝突偵測服務進行驗證
-            return await _conflictService.CheckConflictAsync(reviewerId, date, startTime, endTime, excludeAppointmentId);
+            var (hasConflict, reason) = await _conflictService.CheckConflictAsync(reviewerId, date, startTime, endTime, excludeAppointmentId);
+            return (!hasConflict, hasConflict ? reason : null);
         }
     }
 }

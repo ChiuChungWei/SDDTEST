@@ -35,6 +35,7 @@ builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 // 新增 Phase 3 服務
 builder.Services.AddScoped<IConflictDetectionService, ConflictDetectionService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // 配置 JWT 認證
 var jwtKey = builder.Configuration["Jwt:Key"] ?? 
