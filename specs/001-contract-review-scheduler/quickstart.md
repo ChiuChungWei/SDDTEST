@@ -1,385 +1,447 @@
 # 契約審查預約系統 - 快速開始指南
 
 **日期**: 2025-11-18  
-**目標讀者**: 開發人員
+**目標讀者**: .NET 開發人員
+**技術棧**: ASP.NET Core 8.0 + SQL Server
 
 ## 概述
 
-本指南將帶您快速設置並運行契約審查預約系統的開發環境。
+本指南將帶您快速設置並運行契約審查預約系統的開發環境。此專案是純後端 REST API，使用 ASP.NET Core 8.0 和 SQL Server。
 
 ## 必要條件
 
 確保您已安裝以下軟體：
 
-- **Node.js**: 18.x 或更高版本
-- **PostgreSQL**: 14 或更高版本
-- **Redis**: 7 或更高版本
-- **Docker** 和 **Docker Compose** (推薦用於簡化設置)
+- **.NET SDK**: 8.0 或更高版本 ([下載](https://dotnet.microsoft.com/download/dotnet/8.0))
+- **Visual Studio**: 2022 或更高版本（建議 Enterprise），或 VS Code + C# 擴充
+- **SQL Server**: 2019 或更高版本（開發環境可使用 SQL Server Express 或 LocalDB）
 - **Git**: 2.x 或更高版本
+- **Postman 或 Thunder Client**: API 測試工具
+
+### 選擇性工具
+- **SQL Server Management Studio (SSMS)**: 資料庫管理工具
+- **Azure Data Studio**: 輕量級 SQL Server 管理工具
 
 ## 開發環境設置
 
-### 方式 1：使用 Docker Compose (推薦)
+### 方式 1：使用 Visual Studio 2022 (推薦)
 
-#### 1. 複製環境設定檔
+#### 1. 開啟專案
 
 ```bash
-cp .env.example .env
+git clone <repository-url>
+cd ContractReviewScheduler
 ```
 
-編輯 `.env` 檔案，設定以下變數：
+在 Visual Studio 中開啟 `ContractReviewScheduler.sln`。
 
-```env
-# 應用設定
-NODE_ENV=development
-PORT=3000
-API_PORT=3001
+#### 2. 復原 NuGet 套件
 
-# 資料庫設定
-DB_HOST=db
-DB_PORT=5432
-DB_USER=admin
-DB_PASSWORD=changeme
-DB_NAME=contract_review
+Visual Studio 會自動復原套件，或手動執行：
 
-# Redis 設定
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-# WiAD 設定
-LDAP_URL=ldap://your-ad-server:389
-LDAP_BASE_DN=dc=company,dc=com
-LDAP_USERNAME=your-ad-user
-LDAP_PASSWORD=your-ad-password
-
-# 郵件設定
-SMTP_HOST=mail.company.com
-SMTP_PORT=587
-SMTP_USER=noreply@isn.co.jp
-SMTP_PASSWORD=your-smtp-password
-SMTP_FROM=noreply@isn.co.jp
+```bash
+dotnet restore
 ```
 
-#### 2. 啟動服務
+#### 3. 配置資料庫連接
+
+編輯 `appsettings.Development.json`：
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=ContractReviewDb;Trusted_Connection=true;Encrypt=false;"
+  },
+  "Ldap": {
+    "Path": "LDAP://your-ad-server:389",
+    "BaseDn": "dc=company,dc=com"
+  },
+  "Smtp": {
+    "Host": "mail.company.com",
+    "Port": 587,
+    "EnableSSL": true,
+    "Username": "noreply@isn.co.jp",
+    "Password": "your-smtp-password"
+  },
+  "JwtSettings": {
+    "Secret": "your-super-secret-key-min-32-chars-long-!!!",
+    "ExpirationMinutes": 60
+  }
+}
+```
+
+#### 4. 建立資料庫與遷移
+
+在 Package Manager Console 執行：
+
+```powershell
+Add-Migration InitialCreate
+Update-Database
+```
+
+或使用 .NET CLI：
+
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+
+#### 5. 執行應用
+
+按 F5 或使用 Visual Studio 的「開始偵錯」按鈕。
+
+API 將在 `https://localhost:7001` (HTTPS) 或 `http://localhost:5001` (HTTP) 運行。
+
+### 方式 2：使用命令列 (VS Code)
+
+#### 1. 準備開發環境
+
+```bash
+git clone <repository-url>
+cd ContractReviewScheduler
+```
+
+#### 2. 復原依賴
+
+```bash
+dotnet restore
+```
+
+#### 3. 配置連接字串
+
+建立或編輯 `appsettings.Development.json` (如上所示)
+
+#### 4. 執行資料庫遷移
+
+```bash
+dotnet ef database update
+```
+
+#### 5. 執行應用
+
+```bash
+dotnet run --configuration Development
+```
+
+API 將在 `https://localhost:7001` 運行。
+
+### 方式 3：使用 Docker (可選)
+
+#### 1. 建立 Dockerfile
+
+在專案根目錄建立 `Dockerfile`：
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet restore
+RUN dotnet build -c Release -o /app/build
+
+FROM mcr.microsoft.com/dotnet/runtime:8.0
+WORKDIR /app
+COPY --from=build /app/build .
+ENTRYPOINT ["dotnet", "ContractReviewScheduler.dll"]
+```
+
+#### 2. 建立 docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: YourPassword123!
+      ACCEPT_EULA: Y
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  api:
+    build: .
+    ports:
+      - "5001:80"
+      - "7001:443"
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=ContractReviewDb;User Id=sa;Password=YourPassword123!;"
+    depends_on:
+      - sqlserver
+    volumes:
+      - .:/src
+
+volumes:
+  sqlserver_data:
+```
+
+#### 3. 執行服務
 
 ```bash
 docker-compose up -d
 ```
 
-此指令將啟動：
-- PostgreSQL 資料庫
-- Redis 快取
-- 後端 API 伺服器 (3001 埠)
-- 前端開發伺服器 (3000 埠)
-
-#### 3. 初始化資料庫
-
-```bash
-docker-compose exec api npm run migrate
-```
-
-### 方式 2：本機安裝
-
-#### 1. 安裝依賴
-
-```bash
-# 後端依賴
-cd backend
-npm install
-
-# 前端依賴
-cd ../frontend
-npm install
-```
-
-#### 2. 設定環境變數
-
-在專案根目錄建立 `.env` 檔案，參照上方的環境變數範例。
-
-#### 3. 啟動 PostgreSQL 和 Redis
-
-```bash
-# macOS (使用 Homebrew)
-brew services start postgresql
-brew services start redis
-
-# Linux (Ubuntu/Debian)
-sudo systemctl start postgresql
-sudo systemctl start redis-server
-
-# Windows (使用 Docker)
-docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=changeme postgres:14
-docker run -d -p 6379:6379 redis:7
-```
-
-#### 4. 初始化資料庫
-
-```bash
-cd backend
-npm run migrate
-```
-
-#### 5. 啟動開發伺服器
-
-```bash
-# 終端 1：後端
-cd backend
-npm run dev
-
-# 終端 2：前端
-cd frontend
-npm start
-```
-
 ## 專案結構
 
 ```
-contract-review-scheduler/
-├── backend/                    # 後端應用
-│   ├── src/
-│   │   ├── config/            # 設定檔
-│   │   ├── controllers/       # 控制器
-│   │   ├── models/            # 資料模型
-│   │   ├── routes/            # 路由定義
-│   │   ├── services/          # 業務邏輯
-│   │   ├── middleware/        # 中介軟體
-│   │   ├── utils/             # 工具函式
-│   │   └── index.ts           # 應用入點
-│   ├── tests/                 # 測試檔案
-│   ├── migrations/            # 資料庫遷移
-│   └── package.json
-├── frontend/                   # 前端應用
-│   ├── src/
-│   │   ├── components/        # React 元件
-│   │   ├── pages/             # 頁面
-│   │   ├── services/          # API 服務
-│   │   ├── store/             # Redux 狀態
-│   │   ├── styles/            # 樣式檔案
-│   │   ├── utils/             # 工具函式
-│   │   └── App.tsx            # 應用根元件
-│   ├── tests/                 # 測試檔案
-│   └── package.json
-├── docker-compose.yml         # Docker Compose 設定
-├── .env.example               # 環境變數範例
-└── README.md
+ContractReviewScheduler/
+├── ContractReviewScheduler.csproj
+├── Program.cs                        # 應用入點
+├── appsettings.json
+├── appsettings.Development.json
+│
+├── Controllers/
+│   ├── AuthController.cs             # 認證端點
+│   ├── AppointmentsController.cs      # 預約端點
+│   ├── LeaveSchedulesController.cs    # 休假端點
+│   └── CalendarController.cs          # 月曆端點
+│
+├── Models/
+│   ├── Domain/                       # 領域模型
+│   │   ├── User.cs
+│   │   ├── Appointment.cs
+│   │   ├── LeaveSchedule.cs
+│   │   └── AppointmentHistory.cs
+│   │
+│   └── Dto/                          # 資料傳輸物件 (POCO)
+│       ├── LoginRequest.cs
+│       ├── AppointmentResponse.cs
+│       └── ...
+│
+├── Data/
+│   ├── ApplicationDbContext.cs        # DbContext 定義
+│   └── Migrations/                   # EF Core 遷移檔案
+│
+├── Services/
+│   ├── IAuthService.cs / AuthService.cs
+│   ├── IAppointmentService.cs / AppointmentService.cs
+│   ├── ILdapService.cs / LdapService.cs
+│   ├── IEmailService.cs / EmailService.cs
+│   └── ILeaveScheduleService.cs / LeaveScheduleService.cs
+│
+├── Middleware/
+│   ├── ExceptionHandlingMiddleware.cs
+│   └── AuthenticationMiddleware.cs
+│
+├── HostedServices/
+│   └── EmailQueueService.cs          # 後台郵件處理
+│
+├── Validators/
+│   └── AppointmentValidator.cs       # 商業邏輯驗證
+│
+├── Repositories/ (可選)
+│   ├── IAppointmentRepository.cs
+│   └── AppointmentRepository.cs
+│
+└── Tests/
+    ├── UnitTests/
+    │   ├── AuthServiceTests.cs
+    │   └── AppointmentServiceTests.cs
+    └── IntegrationTests/
+        └── AppointmentControllerTests.cs
 ```
 
 ## 常用命令
 
-### 後端
+### Entity Framework Core 命令
 
 ```bash
-cd backend
+# 建立新遷移
+dotnet ef migrations add <MigrationName>
 
-# 安裝依賴
-npm install
+# 套用最新遷移
+dotnet ef database update
 
-# 開發模式執行
-npm run dev
+# 移除最後一個遷移
+dotnet ef migrations remove
 
-# 執行測試
-npm test
+# 生成資料庫腳本
+dotnet ef migrations script
 
-# 執行程式碼涵蓋率分析
-npm run test:coverage
-
-# 建立生產版本
-npm run build
-
-# 資料庫遷移
-npm run migrate
-npm run migrate:rollback
-
-# 程式碼 Linting
-npm run lint
-npm run lint:fix
+# 查看現有遷移
+dotnet ef migrations list
 ```
 
-### 前端
+### 編譯和執行
 
 ```bash
-cd frontend
+# 編譯
+dotnet build
 
-# 安裝依賴
-npm install
+# 編譯 Release 版本
+dotnet build -c Release
 
-# 開發模式執行
-npm start
+# 執行
+dotnet run
 
-# 建立生產版本
-npm run build
+# 執行特定設定
+dotnet run --configuration Development
 
-# 執行測試
-npm test
-
-# 程式碼 Linting
-npm run lint
-npm run lint:fix
-
-# 執行 E2E 測試
-npm run e2e
+# 執行特定啟動設定檔
+dotnet run --launch-profile "https"
 ```
 
-## API 文件
+### 測試
 
-API 文件使用 OpenAPI 3.0 規範，位於 `contracts/openapi.yaml`。
+```bash
+# 執行所有測試
+dotnet test
 
-### 檢視 API 文件
+# 執行特定測試類別
+dotnet test --filter "ClassName=AuthServiceTests"
 
-啟動應用後，可通過以下方式檢視 API 文件：
-
+# 產生程式碼涵蓋率報告
+dotnet test /p:CollectCoverage=true
 ```
-http://localhost:3001/api/docs
+
+### 打包和發佈
+
+```bash
+# 建立 Release 組建
+dotnet publish -c Release -o ./publish
+
+# 建立自含應用
+dotnet publish -c Release -r win-x64 --self-contained
 ```
 
 ## 資料庫連接
 
-### 使用 pgAdmin 管理 PostgreSQL
+### 使用 SQL Server Management Studio (SSMS)
 
-如果使用 Docker Compose，pgAdmin 會自動啟動在 5050 埠：
+1. 開啟 SSMS
+2. 伺服器名稱: `localhost` 或 `(localdb)\mssqllocaldb` (使用 LocalDB 時)
+3. 認證: Windows 認證
+4. 連接
 
+### 使用 Azure Data Studio
+
+```bash
+# 安裝 Azure Data Studio
+# 連接資訊與 SSMS 相同
 ```
-http://localhost:5050
+
+## API 測試
+
+### 使用 Postman
+
+1. 下載 [Postman](https://www.postman.com/downloads/)
+2. 匯入 API 集合 (位於 `postman/ContractReviewScheduler.postman_collection.json`)
+3. 開始測試 API
+
+### 使用 Thunder Client (VS Code)
+
+1. 安裝 Thunder Client 擴充
+2. 在 VS Code 側邊欄開啟 Thunder Client
+3. 建立新的 HTTP 要求
+4. 測試範例:
+
+```bash
+POST http://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "john.doe",
+  "password": "password123"
+}
 ```
 
-登入認證 (預設)：
-- Email: admin@admin.com
-- Password: admin
+### 使用 curl
 
-### 連接資訊
+```bash
+# 登入
+curl -X POST http://localhost:5001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"john.doe","password":"password123"}'
 
-- Host: db (在 Docker) 或 localhost (本機)
-- Port: 5432
-- Username: admin
-- Password: changeme (或您在 `.env` 中設定的密碼)
-- Database: contract_review
+# 建立預約
+curl -X POST http://localhost:5001/api/appointments \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{...}'
+```
 
 ## 常見問題
 
-### Q: 如何重置資料庫？
+### Q: 如何重置資料庫?
 
 ```bash
-# 後端
-cd backend
-npm run migrate:rollback:all
-npm run migrate
+# 刪除所有遷移並重新建立
+dotnet ef database drop
+dotnet ef migrations add InitialCreate
+dotnet ef database update
 ```
 
-### Q: 如何檢查 Redis 連線？
+### Q: 如何連接到本機 SQL Server?
 
-```bash
-redis-cli ping
-# 應輸出：PONG
+連接字串範例:
+
+```
+Server=localhost;Database=ContractReviewDb;Integrated Security=true;Encrypt=false;
 ```
 
-### Q: 如何檢查 PostgreSQL 連線？
+### Q: 如何啟用 SQL 查詢日誌?
 
-```bash
-psql -h localhost -U admin -d contract_review -c "SELECT 1;"
+編輯 `Program.cs`：
+
+```csharp
+services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(connectionString)
+           .LogTo(Console.WriteLine, LogLevel.Information)
+           .EnableSensitiveDataLogging();
+});
 ```
 
-### Q: 如何除錯前端應用？
+### Q: 如何除錯 LDAP 認證?
 
-使用 Chrome DevTools：
-1. 開啟瀏覽器開發者工具 (F12)
-2. 切換到 Sources 選項卡
-3. 設定斷點並檢查變數
+在 `LdapService` 新增詳細日誌：
 
-### Q: 如何查看後端日誌？
-
-```bash
-# Docker
-docker-compose logs -f api
-
-# 本機
-cd backend && npm run dev  # 日誌直接輸出到終端
+```csharp
+_logger.LogInformation($"嘗試連接 LDAP: {_ldapPath}");
+_logger.LogInformation($"搜尋使用者: {username}");
 ```
 
-## 測試
+### Q: API 無法啟動怎麼辦?
 
-### 單元測試
+1. 檢查 `appsettings.Development.json` 設定
+2. 確認 SQL Server 運行中
+3. 檢查連接字串是否正確
+4. 查看詳細錯誤訊息
 
-```bash
-# 後端
-cd backend
-npm test
+### Q: 如何查看 Serilog 日誌?
 
-# 前端
-cd frontend
-npm test
-```
+日誌會輸出到:
+- 控制台 (開發模式)
+- 檔案 (配置中指定)
+- 事件檢視器 (配置中指定)
 
-### 整合測試
+### Q: 如何管理用戶端密鑰?
 
-```bash
-cd backend
-npm run test:integration
-```
-
-### 端到端測試
+使用 `.NET User Secrets`:
 
 ```bash
-cd frontend
-npm run e2e
-```
+# 初始化
+dotnet user-secrets init
 
-### 程式碼涵蓋率
+# 設定密鑰
+dotnet user-secrets set "Ldap:Password" "your-password"
 
-```bash
-# 後端 (目標：80%)
-cd backend
-npm run test:coverage
-
-# 前端
-cd frontend
-npm run test:coverage
-```
-
-## 效能測試
-
-### 本機效能測試
-
-```bash
-cd backend
-npm run test:performance
-```
-
-## 部署準備
-
-### 建立生產版本
-
-```bash
-# 後端
-cd backend
-npm run build
-
-# 前端
-cd frontend
-npm run build
-```
-
-生產版本檔案位於：
-- 後端: `backend/dist/`
-- 前端: `frontend/build/`
-
-### 使用 Docker 部署
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
+# 列出所有密鑰
+dotnet user-secrets list
 ```
 
 ## 憲章合規性檢查清單
 
 開發時請確保符合以下要求：
 
-- ✅ 所有使用者介面文字使用繁體中文
-- ✅ API 錯誤訊息使用繁體中文
+- ✅ 所有 API 錯誤訊息使用繁體中文
+- ✅ 所有 API 文件使用繁體中文
 - ✅ 程式碼註釋使用繁體中文
 - ✅ 單元測試涵蓋率 >= 80%
 - ✅ 函式循環複雜度 <= 10
 - ✅ API 回應時間 < 200ms
-- ✅ 頁面載入時間 < 2 秒
-- ✅ 實施 WCAG 2.1 AA 無障礙標準
+- ✅ 實施安全認證和授權
 - ✅ 實施 OWASP 安全最佳實踐
 
 ## 下一步

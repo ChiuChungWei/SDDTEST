@@ -1,83 +1,322 @@
 # 契約審查預約系統 - 研究與技術決策
 
-**日期**: 2025-11-18  
+**日期**: 2025-11-18 (更新: ASP.NET Core 技術棧)  
 **狀態**: 完成
+**實作語言**: C# + ASP.NET Core 8.0
+
+## 技術棧選擇
+
+### 決策
+使用 **ASP.NET Core 8.0 Web API** 搭配 **SQL Server** 資料庫，**EF Core Code First** 開發方式
+
+### 理由
+- ASP.NET Core 8.0 是微軟企業級框架，效能優異
+- SQL Server 提供企業級資料庫功能和可靠性
+- EF Core Code First 支援版本控制友善的模式遷移
+- 原生 LDAP 支援 (System.DirectoryServices)
+- 內建的相依性注入和中介軟體管理
+- 全面的日誌記錄和診斷功能
+
+### 評估的替代方案
+- ❌ Node.js Express - 效能不如 ASP.NET Core，企業支援力度不足
+- ❌ Python FastAPI - 資料型別安全性不如 C#
+- ✅ ASP.NET Core 8.0 (選定)
+- ❌ Java Spring Boot - 公司技術棧偏向微軟生態
+
+### 關鍵決策
+- **資料庫**: SQL Server 2019+
+- **ORM**: Entity Framework Core (Code First)
+- **DTO 對映**: POCO (不使用 AutoMapper)
+- **快取**: 內存快取 (IMemoryCache，不使用 Redis)
+- **郵件**: System.Net.Mail + 後台服務
+- **認證**: LDAP (System.DirectoryServices)
+
+---
 
 ## 1. WiAD 認證整合
 
 ### 決策
-使用 **Active Directory (LDAP)** 協議透過公司 WiAD 系統進行身份驗證
+使用 **System.DirectoryServices** 進行 Active Directory LDAP 認證
 
 ### 理由
-- WiAD 是公司標準的身份識別系統
-- LDAP 是業界標準的 AD 整合協議
-- Node.js 有成熟的 `ldapjs` 或 `active-directory` 套件支援
-- 無需額外的 SSO 基礎設施投資
+- System.DirectoryServices 是 .NET Framework 原生支援
+- 無需第三方套件，直接使用 Windows/AD 基礎設施
+- ASP.NET Core 完全支援
+- 提供完整的 LDAP 功能
 
 ### 評估的替代方案
-- ❌ OAuth2/OpenID Connect - 公司 WiAD 不支援
-- ❌ SAML - 超過此專案的複雜度需求
-- ✅ LDAP (選定)
-- ❌ 自訂帳號系統 - 重複工作，違反公司政策
+- ❌ ldapjs - Node.js 套件，不適用於 ASP.NET Core
+- ✅ System.DirectoryServices (選定)
+- ❌ Azure AD - 額外的雲端成本
+- ❌ Kerberos 單一登入 - 超出此專案需求
 
 ### 關鍵實作細節
-- 使用 `ldapjs` npm 套件連接 AD
+- 使用 `DirectoryEntry` 和 `DirectorySearcher` 連接 AD
 - 郵件生成規則：`{AD帳號}@isn.co.jp`
-- 快取 AD 查詢結果以改善效能 (TTL: 1 小時)
-- 實作完善的錯誤處理和重試機制
+- 快取 AD 查詢結果以改善效能 (IMemoryCache，TTL: 1 小時)
+- 實作完善的異常處理和重試機制
+- 建立服務類別 `ILdapService` 封裝 LDAP 邏輯
 
 ---
 
 ## 2. 郵件系統整合
 
 ### 決策
-使用 **Nodemailer** 搭配公司 SMTP 伺服器進行郵件發送
+使用 **System.Net.Mail (SmtpClient)** 搭配背景服務隊列進行郵件發送
 
 ### 理由
-- Nodemailer 是 Node.js 最流行的郵件發送套件
+- System.Net.Mail 是 .NET 原生套件，無外部相依
 - 支援 SMTP 協議（公司郵件系統標準）
-- 內建郵件佇列和重試機制支援
-- 支援 HTML 郵件範本
+- ASP.NET Core 背景服務可實作郵件隊列機制
+- 資料庫記錄可追蹤郵件發送狀態
 
 ### 評估的替代方案
+- ❌ Nodemailer - Node.js 套件，不適用於 ASP.NET Core
+- ✅ System.Net.Mail + 背景服務 (選定)
 - ❌ SendGrid/AWS SES - 公司政策要求使用內部郵件系統
-- ❌ 直接 SMTP - 缺乏錯誤處理和重試邏輯
-- ✅ Nodemailer (選定)
 - ❌ 手工撰寫 SMTP 客戶端 - 重複造輪
 
 ### 關鍵實作細節
-- 設定檔案存放 SMTP 伺服器位址、帳號、密碼
-- 使用 `bull` 或 `node-queue` 管理郵件佇列
-- 實作失敗重試機制 (最多 3 次)
-- 所有郵件範本使用繁體中文
-- 記錄所有發送的郵件到資料庫稽核
+- 建立 `IEmailService` 介面進行郵件發送
+- 實作後台服務 `EmailQueueService` 管理郵件隊列
+- 在 `NotificationLog` 表中記錄所有郵件發送
+- 重試機制：最多重試 3 次，間隔 5 分鐘
+- 所有郵件內容使用繁體中文範本
+- 使用 `HostedService` 實作背景郵件處理
 
 ---
 
-## 3. 月曆 UI 元件
+## 3. 資料庫設計
 
 ### 決策
-使用 **React Big Calendar** 搭配自訂時段顯示
+使用 **SQL Server** 搭配 **Entity Framework Core Code First**
 
 ### 理由
-- React Big Calendar 是 React 生態中最成熟的月曆元件
-- 原生支援月、週、日檢視
-- 支援事件（預約）的自訂渲染
-- 效能好，支援大量事件
-- 活躍的社群和文件
+- SQL Server 提供企業級功能（事務、索引、執行計畫最佳化）
+- EF Core Code First 與版本控制友善
+- 支援複雜查詢和 LINQ
+- 原生的日期時間和 Unicode 支援
 
 ### 評估的替代方案
-- ❌ react-calendar - 功能較基礎，月曆展示能力不足
-- ❌ full-calendar - 過重，提供超出需求的功能
-- ✅ React Big Calendar (選定)
-- ❌ 自訂 HTML 月曆 - 時間成本高，維護困難
+- ❌ PostgreSQL - 雖然功能強大，但公司使用 SQL Server
+- ✅ SQL Server (選定)
+- ❌ MySQL - 事務支援和複雜查詢能力不如 SQL Server
+- ❌ SQLite - 適合開發，不適合生產
 
 ### 關鍵實作細節
-- 自訂事件渲染器顯示預約狀態顏色
-- 已確認預約顯示黃色標記
-- 待確認預約顯示灰色標記
-- 實作自訂工具提示顯示時段詳情
-- 支援月曆點擊開啟預約對話
+- 使用 DbContext 定義所有實體
+- Code First 遷移進行版本控制
+- 建立適當的索引支援查詢效能
+- 使用資料庫約束確保資料完整性
+- 建立 Fluent API 配置進階映射
+
+---
+
+## 4. 時段衝突檢測演算法
+
+### 決策
+使用 **SQL Server 時間重疊查詢** 搭配 **應用層驗證** 的雙層驗證模式
+
+### 理由
+- SQL Server 的 DATEDIFF 函式高效處理時間範圍比較
+- 應用層驗證提供快速反饋
+- 使用交易保證原子性，防止並發衝突
+
+### 技術選擇
+- **SQL 查詢**: 
+  ```sql
+  SELECT COUNT(*) FROM Appointments 
+  WHERE ReviewerId = @ReviewerId 
+    AND AppointmentDate = @Date
+    AND NOT (TimeEnd <= @TimeStart OR TimeStart >= @TimeEnd)
+    AND Status NOT IN ('Rejected', 'Cancelled');
+  ```
+- **資料庫索引**: (ReviewerId, AppointmentDate, TimeStart, TimeEnd)
+- **應用層檢查**: LINQ to EF 進行查詢
+- **交易隔離等級**: SERIALIZABLE 進行關鍵操作
+
+### 關鍵實作細節
+- 在 `AppointmentService` 建立衝突檢測方法
+- 使用 `DbContext.Database.BeginTransaction` 保證原子性
+- 提供清晰的衝突錯誤訊息給用戶端
+
+---
+
+## 5. ORM 和物件映射策略
+
+### 決策
+使用 **Entity Framework Core** 搭配 **POCO** (Plain Old CLR Object)，不使用 AutoMapper
+
+### 理由
+- POCO 簡單直接，易於版本控制
+- EF Core 自動跟蹤變更
+- 大幅減少外部相依
+- 手動映射明確且易於除錯
+
+### 評估的替代方案
+- ❌ AutoMapper - 增加複雜度和外部相依
+- ✅ POCO 直接映射 (選定)
+- ❌ OData - 超出此專案需求
+
+### 關鍵實作細節
+- 定義 POCO 模型對應資料庫實體
+- API 回應 DTO 與實體保持一致結構
+- 自訂映射邏輯寫在 Service 層
+- 防止 Lazy Loading 問題，使用 `.Include()` 顯式載入
+
+---
+
+## 6. 後台服務與隊列管理
+
+### 決策
+使用 **ASP.NET Core Hosted Services** 進行背景任務管理（郵件、定期清理）
+
+### 理由
+- Hosted Services 是 ASP.NET Core 原生功能
+- 無需外部隊列系統 (如 RabbitMQ、Kafka)
+- 適合此規模的應用
+- 簡化部署和運維
+
+### 評估的替代方案
+- ❌ Hangfire - 額外開源相依，此規模不必要
+- ❌ RabbitMQ/Kafka - 過於複雜
+- ✅ Hosted Services (選定)
+- ❌ 執行緒池 - 不夠可靠
+
+### 關鍵實作細節
+- 實作 `IHostedService` 進行郵件處理
+- 建立 `EmailQueue` 表儲存待發送郵件
+- 背景服務定期檢查並發送郵件
+- 異常處理和重試機制
+
+---
+
+## 7. API 設計與控制器
+
+### 決策
+使用 **傳統控制器模式** (Controllers)，而不使用 Minimal APIs
+
+### 理由
+- 傳統控制器提供更結構化的組織方式
+- 便於團隊協作和程式碼標準化
+- 更容易實作橫切關注點 (認證、授權、日誌)
+- 更適合複雜的業務邏輯
+
+### 評估的替代方案
+- ❌ Minimal APIs - 適合簡單 API，不適合此規模
+- ✅ 傳統控制器 (選定)
+- ❌ GraphQL - 增加複雜度
+
+### 關鍵實作細節
+- 建立 ApiController 基底類別
+- 實作全域異常處理中介軟體
+- 標準化 API 回應格式
+- 使用 Attribute-based 路由
+
+---
+
+## 8. 快取策略
+
+### 決策
+使用 **System.Runtime.Caching (IMemoryCache)** 進行應用層快取
+
+### 理由
+- IMemoryCache 是 ASP.NET Core 原生功能
+- 不需要 Redis 外部依賴
+- 適合此規模應用的快取需求
+- 簡化部署
+
+### 評估的替代方案
+- ❌ Redis - 不必要的複雜度
+- ✅ IMemoryCache (選定)
+- ❌ 分散式快取 - 此規模不需要
+
+### 關鍵實作細節
+- 快取 AD 查詢結果 (TTL: 1 小時)
+- 快取審查人員清單 (TTL: 1 小時)
+- 快取預約狀態 (TTL: 15 分鐘)
+- 預約變更時主動失效快取
+
+---
+
+## 9. 認證與授權
+
+### 決策
+使用 **基於角色的存取控制 (RBAC)** 搭配 **JWT 令牌**
+
+### 理由
+- JWT 無狀態且易於擴展
+- RBAC 簡單直接符合此業務需求
+- ASP.NET Core 原生支援
+
+### 關鍵實作細節
+- 使用 `[Authorize]` 和 `[Authorize(Roles = "...")]` 特性
+- 實作自訂授權處理程式
+- 登入時簽發 JWT 令牌
+- 實作 LDAP 驗證中介軟體
+
+---
+
+## 10. 日誌和監控
+
+### 決策
+使用 **Serilog** 進行結構化日誌記錄
+
+### 理由
+- Serilog 是業界標準的 .NET 日誌庫
+- 支援結構化日誌（便於分析）
+- 支援多個 Sink (檔案、資料庫、雲端)
+- 與 ASP.NET Core 整合良好
+
+### 關鍵實作細節
+- 配置 Serilog 寫入檔案和事件日誌
+- 記錄所有 API 呼叫
+- 記錄認證嘗試
+- 記錄郵件發送狀態
+
+---
+
+## 11. 效能最佳化
+
+### 決策
+使用 **SQL 查詢最佳化** + **應用層快取** + **非同步操作**
+
+### 理由
+- 達成 API 回應時間 < 200ms 目標
+- 減少資料庫查詢負擔
+
+### 技術選擇
+- **資料庫層**: 適當的索引、執行計畫最佳化
+- **應用層**: IMemoryCache 進行熱點資料快取
+- **非同步**: 所有 I/O 操作使用 async/await
+- **批次查詢**: 使用 LINQ 投影減少傳輸數據量
+
+### 關鍵實作細節
+- 在關鍵路徑使用 `.AsNoTracking()` 提高查詢速度
+- 使用 `.Include()` 和 `.ThenInclude()` 避免 N+1 查詢
+- 實作查詢分頁限制
+- 監控慢查詢並最佳化
+
+---
+
+## 總結
+
+所有 11 項主要技術決策已完成，針對 ASP.NET Core 8.0 生態最佳化：
+
+| 決策項目 | 選擇 | 理由 |
+|---------|------|------|
+| 框架 | ASP.NET Core 8.0 | 企業級效能 |
+| 資料庫 | SQL Server | 企業級功能 |
+| ORM | EF Core Code First | 版本控制友善 |
+| 物件映射 | POCO | 簡單直接 |
+| 快取 | IMemoryCache | 無外部相依 |
+| 後台服務 | Hosted Services | 原生支援 |
+| 認證 | LDAP + JWT | 標準做法 |
+| API 模式 | 控制器 | 結構化 |
+| 日誌 | Serilog | 業界標準 |
+| 效能 | 多層最佳化 | 達成目標 |
+
+實作團隊可基於上述決策進行 Phase 1 設計工作。
 
 ---
 
