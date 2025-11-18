@@ -13,6 +13,11 @@ The application should be built using the following technologies:
 - Database: SQL Server
 - Frontend: TBD
 
-The application should follow the principles of clean architecture and SOLID design.
-
-Please note to only complete the backend development work first.
+The backend development is complete. Please complete the frontend development now.
+The frontend should be a modern, responsive web application using React and TypeScript.
+It should integrate with the existing backend API.
+Please include components for:
+- Login
+- Calendar view
+- Appointment creation/details
+- A dashboard to view upcoming appointments.

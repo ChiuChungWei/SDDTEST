@@ -1,0 +1,98 @@
+.calendar-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .calendar-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calendar-wrapper,
+.slots-wrapper {
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.calendar-wrapper h3,
+.slots-wrapper h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 18px;
+}
+
+.calendar {
+  width: 100%;
+}
+
+.react-calendar {
+  border: none;
+  background: white;
+  border-radius: 5px;
+}
+
+.react-calendar__tile {
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.react-calendar__tile--active {
+  background: #667eea;
+  color: white;
+}
+
+.react-calendar__tile--now {
+  background: #e8f4f8;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.slot-button {
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.slot-button:hover:not(:disabled) {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.slot-button.selected {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.slot-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.no-slots {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-style: italic;
+}
