@@ -32,6 +32,10 @@ builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 
+// 新增 Phase 3 服務
+builder.Services.AddScoped<IConflictDetectionService, ConflictDetectionService>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
 // 配置 JWT 認證
 var jwtKey = builder.Configuration["Jwt:Key"] ?? 
     throw new InvalidOperationException("JWT Key 未在配置中設定");

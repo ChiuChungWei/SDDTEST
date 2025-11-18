@@ -120,11 +120,11 @@
 
 - [ ] T016 [P] [US1] 創建 User 模型在 `backend/Models/Domain/User.cs` (ad_account, name, email, role, is_active)
 - [ ] T017 [P] [US1] 創建 Appointment 模型在 `backend/Models/Domain/Appointment.cs` (含狀態、代理人字段)
-- [ ] T018 [US1] 實施 AppointmentService 商業邏輯在 `backend/Services/AppointmentService.cs` (驗證時段、檢查衝突、檢查休假)
-- [ ] T019 [P] [US1] 實施時段衝突偵測演算法在 `backend/Services/ConflictDetectionService.cs` (使用 SQL Server DATEDIFF)
-- [ ] T020 [P] [US1] 實施月曆資訊 API 端點在 `backend/Controllers/CalendarController.cs` (GET /api/calendar/{reviewerId}/{date})
-- [ ] T021 [US1] 實施預約建立 API 端點在 `backend/Controllers/AppointmentsController.cs` (POST /api/appointments)
-- [ ] T022 [US1] 實施預約查詢 API 端點在 `backend/Controllers/AppointmentsController.cs` (GET /api/appointments/{id})
+- [x] T018 [US1] 實施 AppointmentService 商業邏輯在 `backend/Services/AppointmentService.cs` (驗證時段、檢查衝突、檢查休假)
+- [x] T019 [P] [US1] 實施時段衝突偵測演算法在 `backend/Services/ConflictDetectionService.cs` (使用 SQL Server DATEDIFF)
+- [x] T020 [P] [US1] 實施月曆資訊 API 端點在 `backend/Controllers/CalendarController.cs` (GET /api/calendar/{reviewerId}/{date})
+- [x] T021 [US1] 實施預約建立 API 端點在 `backend/Controllers/AppointmentsController.cs` (POST /api/appointments)
+- [x] T022 [US1] 實施預約查詢 API 端點在 `backend/Controllers/AppointmentsController.cs` (GET /api/appointments/{id})
 - [ ] T023 [P] [US1] 實施郵件通知後台服務在 `backend/HostedServices/EmailQueueService.cs` (IHostedService)
 - [ ] T024 [P] [US1] 創建郵件範本在 `backend/Templates/NewAppointmentNotification.html`
 - [ ] T025 [US1] 整合郵件系統於預約建立流程
@@ -370,5 +370,6 @@ Phase 8 (文件與部署)
 **文件版本**: 1.0  
 **最後更新**: 2025-11-18  
 **狀態**: 準備開始 Phase 1 實施
+
 
 
