@@ -1,5 +1,1 @@
-是的，請完成全部三項任務：
-
-1.  **資料庫設定與遷移 (Database Setup & Migration)**
-2.  **整合測試 (Integration Tests)**
-3.  **部署腳本 (Deployment Scripts)**
+Build the entire project. If there are any build errors, fix them.
