@@ -1,23 +1,5 @@
-Based on the following specification, build a contract review scheduler application.
+是的，請完成全部三項任務：
 
-The application will have the following features:
-- A calendar view for scheduling contract reviews.
-- The ability to create, update, and delete appointments.
-- User authentication and authorization.
-- Email notifications for upcoming appointments.
-- A background service for syncing user data from an LDAP source.
-- A conflict detection service to prevent double-booking.
-
-The application should be built using the following technologies:
-- Backend: C# with ASP.NET Core
-- Database: SQL Server
-- Frontend: TBD
-
-The backend development is complete. Please complete the frontend development now.
-The frontend should be a modern, responsive web application using React and TypeScript.
-It should integrate with the existing backend API.
-Please include components for:
-- Login
-- Calendar view
-- Appointment creation/details
-- A dashboard to view upcoming appointments.
+1.  **資料庫設定與遷移 (Database Setup & Migration)**
+2.  **整合測試 (Integration Tests)**
+3.  **部署腳本 (Deployment Scripts)**
