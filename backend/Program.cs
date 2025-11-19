@@ -95,6 +95,13 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Redirect root URL to Swagger
+app.MapGet("/", context => 
+{
+    context.Response.Redirect("/swagger/index.html", permanent: false);
+    return Task.CompletedTask;
+});
+
 app.MapControllers();
 
 try

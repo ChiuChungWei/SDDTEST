@@ -1,1 +1,1 @@
-Fix the frontend dependency issue. Delete node_modules and package-lock.json, then run npm install to install all dependencies, including devDependencies.
+You are correct. The backend works, but visiting the root URL http://localhost:5147/ gives a 404. Please fix this by redirecting the root URL ('/') to the Swagger UI ('/swagger').
