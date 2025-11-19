@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { authApi } from '../api/auth';
-import '../styles/Auth.css';
+import { useAuthStore } from '../../store/authStore';
+import { authApi } from '../../api/auth';
+import '../../styles/Auth.css';
 
 export const Login: React.FC = () => {
   const [adAccount, setAdAccount] = useState('');

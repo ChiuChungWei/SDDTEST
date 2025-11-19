@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { appointmentsApi } from '../api/appointments';
-import { Appointment } from '../types/appointment';
+import { appointmentsApi } from '../../api/appointments';
+import { Appointment } from '../../types/appointment';
 import {
   formatDateTime,
   getStatusBadgeColor,
   getStatusLabel,
   formatTime,
-} from '../utils/formatting';
-import { useAuthStore } from '../store/authStore';
-import '../styles/AppointmentDetails.css';
+} from '../../utils/formatting';
+import { useAuthStore } from '../../store/authStore';
+import '../../styles/AppointmentDetails.css';
 
 export const AppointmentDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();

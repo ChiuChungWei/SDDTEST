@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { formatDateTime, getStatusBadgeColor, formatTime } from '../utils/formatting';
-import '../styles/Dashboard.css';
+import { useAuthStore } from '../../store/authStore';
+import { formatDateTime, getStatusBadgeColor, formatTime } from '../../utils/formatting';
+import '../../styles/Dashboard.css';
 
 interface MockAppointment {
   id: number;

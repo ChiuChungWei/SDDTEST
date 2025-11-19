@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import { calendarApi } from '../api/calendar';
-import { formatDate, formatTime, timeStringToDate } from '../utils/formatting';
-import { TimeSlot } from '../types/calendar';
+import { calendarApi } from '../../api/calendar';
+import { formatDate, formatTime, timeStringToDate } from '../../utils/formatting';
+import { TimeSlot } from '../../types/calendar';
 import 'react-calendar/dist/Calendar.css';
-import '../styles/Calendar.css';
+import '../../styles/Calendar.css';
 
 interface CalendarViewProps {
   reviewerId: number;

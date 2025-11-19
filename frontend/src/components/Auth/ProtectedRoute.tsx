@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { authApi } from '../api/auth';
+import { useAuthStore } from '../../store/authStore';
+import { authApi } from '../../api/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

@@ -1,1 +1,1 @@
-Build the entire project. If there are any build errors, fix them.
+Fix the frontend dependency issue. Delete node_modules and package-lock.json, then run npm install to install all dependencies, including devDependencies.

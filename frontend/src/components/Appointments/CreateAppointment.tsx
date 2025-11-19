@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { appointmentsApi } from '../api/appointments';
-import { CalendarView } from '../components/Calendar/CalendarView';
-import { dateToTimeString, formatDateTime } from '../utils/formatting';
-import { useAuthStore } from '../store/authStore';
-import '../styles/AppointmentForm.css';
+import { appointmentsApi } from '../../api/appointments';
+import { CalendarView } from '../../components/Calendar/CalendarView';
+import { dateToTimeString, formatDateTime } from '../../utils/formatting';
+import { useAuthStore } from '../../store/authStore';
+import '../../styles/AppointmentForm.css';
 
 interface CreateAppointmentProps {
   reviewerId?: number;
